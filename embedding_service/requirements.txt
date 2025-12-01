@@ -1,0 +1,4 @@
+bentoml>=1.4.0
+onnxruntime
+opencv-python-headless
+numpy

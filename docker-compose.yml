@@ -1,0 +1,18 @@
+services:
+  detection-service:
+    build:
+      context: ./detection_service
+      dockerfile: Dockerfile
+    container_name: detection-service
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+
+  embedding-service:
+    build:
+      context: ./embedding_service
+      dockerfile: Dockerfile
+    container_name: embedding-service
+    ports:
+      - "3001:3000"
+    restart: unless-stopped
