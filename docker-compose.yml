@@ -16,3 +16,56 @@ services:
     ports:
       - "3001:3000"
     restart: unless-stopped
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: postgres
+    env_file: .env
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -h localhost"]
+      interval: 3s
+      timeout: 3s
+      retries: 15
+      start_period: 5s
+
+  qdrant:
+    image: qdrant/qdrant:v1.12.0
+    container_name: qdrant
+    env_file: .env
+    environment:
+      QDRANT__CLUSTER__ENABLED: "false"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    ports:
+      - "${QDRANT_PORT}:6333"
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - bash -c ':> /dev/tcp/127.0.0.1/6333' || exit 1
+      interval: 5s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+  
+  face-api:
+    build:
+      context: ./face_recognition_api
+      dockerfile: Dockerfile
+    container_name: face-api
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    depends_on:
+      qdrant:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    env_file: .env
+
+volumes:
+  postgres_data:
+  qdrant_data:

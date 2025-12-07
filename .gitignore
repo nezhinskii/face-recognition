@@ -24,7 +24,6 @@ embedding_service/*.onnx
 *.weights
 *.engine
 
-models/
 weights/
 checkpoints/
 runs/

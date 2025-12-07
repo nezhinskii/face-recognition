@@ -27,7 +27,8 @@ def extract_largest_face_aligned(
         return None
 
     areas = [(d['bbox'][2] - d['bbox'][0]) * (d['bbox'][3] - d['bbox'][1]) for d in detections]
-    best = detections[np.argmax(areas)]
+    best_det_id = np.argmax(areas)
+    best = detections[best_det_id]
     kps = np.array(best['keypoints']).reshape(5, 2).astype(np.float32)
 
     M, _ = cv2.estimateAffinePartial2D(kps, TEMPLATE_112, method=cv2.LMEDS)
@@ -41,4 +42,4 @@ def extract_largest_face_aligned(
         borderMode=cv2.BORDER_REPLICATE,
         flags=cv2.INTER_LINEAR
     )
-    return aligned
+    return aligned, best_det_id

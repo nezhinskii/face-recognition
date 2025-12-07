@@ -25,9 +25,11 @@ class FaceEmbeddingBatchService:
         detections_list = [inp.detections for inp in inputs]
 
         aligned_faces: List[np.ndarray | None] = []
+        best_det_ids: List[int] = []
         for img_bgr, dets in zip(img_bgr_list, detections_list):
-            face = extract_largest_face_aligned(img_bgr, dets, output_size=112)
+            face, best_det_id = extract_largest_face_aligned(img_bgr, dets, output_size=112)
             aligned_faces.append(face)
+            best_det_ids.append(int(best_det_id))
 
         batch_tensors = []
         valid_indices = []
@@ -41,17 +43,21 @@ class FaceEmbeddingBatchService:
         if batch_tensors:
             batch_input = np.vstack(batch_tensors)
 
-            embeddings: np.ndarray = self.session.run(None, {self.input_name: batch_input})[0]
+            embeddings_raw: np.ndarray = self.session.run(None, {self.input_name: batch_input})[0]
+
+            norms = np.linalg.norm(embeddings_raw, axis=1, keepdims=True)
+            embeddings = embeddings_raw / np.where(norms == 0, 1.0, norms)
 
             for i, orig_idx in enumerate(valid_indices):
                 results[orig_idx] = {
                     "embedding": embeddings[i].tolist(),
+                    "best_det_id": best_det_ids[i]
                 }
 
         for i, res in enumerate(results):
             if res is None:
                 results[i] = {"error": "no_face"}
-
+        
         return results
 
 @bentoml.service()
