@@ -1,14 +1,11 @@
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
 import logging
-import requests
-
 
 from app.models.person import Base
 from app.routers.person import router as person_router
 from app.database import engine
 from app.qdrant_init import init_qdrant_collection
-from app.config import settings
 
 logging.basicConfig(
     level=logging.INFO,
@@ -24,7 +21,6 @@ async def lifespan(app: FastAPI):
     logger.info("Database tables ready")
 
     logger.info("Initializing Qdrant collection...")
-
     init_qdrant_collection()
     logger.info("Qdrant ready")
     yield

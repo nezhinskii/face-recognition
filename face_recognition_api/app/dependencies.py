@@ -13,12 +13,13 @@ def get_db() -> Generator[Session, None, None]:
     finally:
         db.close()
 
+_qdrant_client = QdrantClient(
+    host=settings.qdrant_host,
+    port=settings.qdrant_port,
+    timeout=10.0
+)
 def get_qdrant() -> QdrantClient:
-    return QdrantClient(
-        host=settings.qdrant_host,
-        port=settings.qdrant_port,
-        timeout=10.0
-    )
+    return _qdrant_client
 
 DbSession = Annotated[Session, Depends(get_db)]
 QdrantDep = Annotated[QdrantClient, Depends(get_qdrant)]
