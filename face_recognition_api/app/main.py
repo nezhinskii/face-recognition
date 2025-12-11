@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from contextlib import asynccontextmanager
 import logging
 
-from app.models.person import Base
+from app.models.person_model import Base
 from app.routers.person import router as person_router
 from app.database import engine
 from app.qdrant_init import init_qdrant_collection
@@ -20,7 +20,7 @@ async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
     logger.info("Database tables ready")
 
-    logger.info("Initializing Qdrant collection...")
+    logger.info("Initializing Qdrant collection if not exist...")
     init_qdrant_collection()
     logger.info("Qdrant ready")
     yield

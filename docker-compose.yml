@@ -7,6 +7,12 @@ services:
     ports:
       - "3000:3000"
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/readyz"]
+      interval: 3s
+      timeout: 2s
+      retries: 40
+      start_period: 3s
 
   embedding-service:
     build:
@@ -16,6 +22,12 @@ services:
     ports:
       - "3001:3000"
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/readyz"]
+      interval: 3s
+      timeout: 2s
+      retries: 40
+      start_period: 3s
 
   postgres:
     image: postgres:16-alpine
@@ -61,6 +73,10 @@ services:
       qdrant:
         condition: service_healthy
       postgres:
+        condition: service_healthy
+      detection-service:
+        condition: service_healthy
+      embedding-service:
         condition: service_healthy
     env_file: .env
 

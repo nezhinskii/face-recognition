@@ -1,15 +1,28 @@
 from sqlalchemy.orm import Session
 from qdrant_client import QdrantClient
-from qdrant_client.http.models import PointStruct, VectorParams, Distance
-from qdrant_client.http.models import Filter, FieldCondition, MatchValue
+from qdrant_client.http.models import PointStruct, PointIdsList
 from uuid import uuid4
 from typing import List
 
-from app.models.person import Person
+from app.models.person_model import Person
 from app.config import settings
+
+def get_person_by_id(db: Session, person_id: int) -> Person | None:
+    return db.query(Person).filter(Person.id == person_id).first()
+
+def delete_person_by_id(db: Session, person_id: int) -> bool:
+    person = db.query(Person).filter(Person.id == person_id).first()
+    if not person:
+        return False
+    db.delete(person)
+    db.commit()
+    return True
 
 def get_person_by_name(db: Session, name: str) -> Person | None:
     return db.query(Person).filter(Person.name == name).first()
+
+def get_person_by_qdrant_id(db: Session, qdrant_id: str) -> Person | None:
+    return db.query(Person).filter(Person.qdrant_id == qdrant_id).first()
 
 def create_person(db: Session, name: str, qdrant_id: str) -> Person:
     db_person = Person(name=name, qdrant_id=qdrant_id)
@@ -34,7 +47,6 @@ def search_similar_face(
     threshold: float = 0.40,
 ):
     collection = settings.qdrant_collection
-    print(threshold)
     search_result = qdrant.search(
         collection_name=collection,
         query_vector=embedding,
@@ -47,4 +59,13 @@ def search_similar_face(
         return None, 0.0
 
     hit = search_result[0]
-    return hit.payload["name"], hit.score
+    return hit.id, hit.score
+
+def delete_from_qdrant(qdrant: QdrantClient, qdrant_id: str):
+    collection = settings.qdrant_collection
+    qdrant.delete(
+        collection_name=collection,
+        points_selector=PointIdsList(
+            points=[qdrant_id],
+        ),
+    )        
