@@ -36,21 +36,28 @@ class FaceEmbeddingBatchService:
         for idx, face in enumerate(aligned_faces):
             if face is not None:
                 tensor = preprocess_image(face)
+                flipped = cv2.flip(face, 1)
+                tensor_flip = preprocess_image(flipped)
                 batch_tensors.append(tensor)
+                batch_tensors.append(tensor_flip)
                 valid_indices.append(idx)
 
         results = [None] * len(inputs)
         if batch_tensors:
             batch_input = np.vstack(batch_tensors)
 
-            embeddings_raw: np.ndarray = self.session.run(None, {self.input_name: batch_input})[0]
+            embeddings: np.ndarray = self.session.run(None, {self.input_name: batch_input})[0]
 
-            norms = np.linalg.norm(embeddings_raw, axis=1, keepdims=True)
-            embeddings = embeddings_raw / np.where(norms == 0, 1.0, norms)
-
-            for i, orig_idx in enumerate(valid_indices):
+            num_valid = len(valid_indices)
+            for i in range(num_valid):
+                orig_idx = valid_indices[i]
+                emb_orig = embeddings[2 * i]
+                emb_flip = embeddings[2 * i + 1]
+                avg_emb = (emb_orig + emb_flip) / 2.0
+                norm_avg = np.linalg.norm(avg_emb)
+                final_emb = avg_emb / norm_avg if norm_avg != 0 else avg_emb
                 results[orig_idx] = {
-                    "embedding": embeddings[i].tolist(),
+                    "embedding": final_emb.tolist(),
                     "best_det_id": best_det_ids[i]
                 }
 
